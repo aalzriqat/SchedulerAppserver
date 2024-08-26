@@ -12,18 +12,34 @@ import dotenv from "dotenv";
 // Load environment variables from .env file
 dotenv.config();
 
-// Define __dirname for ES Modules
+// Define __filename and __dirname for ES Modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-
+// Define storage configuration for multer
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "./uploads");
+  },
+  filename: function (req, file, cb) {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  },
+});
 
 const upload = multer({
   storage,
   fileFilter: (req, file, cb) => {
-    const filetypes = /xlsx|xls/;
-    const mimetype = filetypes.test(file.mimetype);
-    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+    const allowedMimeTypes = [
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-excel'
+    ];
+    const allowedExtensions = ['.xlsx', '.xls'];
+
+    const mimetype = allowedMimeTypes.includes(file.mimetype);
+    const extname = allowedExtensions.includes(path.extname(file.originalname).toLowerCase());
+
+    console.log("File MIME type:", file.mimetype);
+    console.log("File extension:", path.extname(file.originalname).toLowerCase());
 
     if (mimetype && extname) {
       return cb(null, true);
@@ -32,9 +48,6 @@ const upload = multer({
   },
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
 });
-
-module.exports = upload;
-
 
 // Helper function for error response
 const handleErrorResponse = (res, error, statusCode = 500) => {
