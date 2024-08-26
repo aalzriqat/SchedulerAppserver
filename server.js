@@ -5,6 +5,11 @@ import cors from "cors";
 import scheduleRoutes from "./routes/scheduleRoutes.js";
 import swapRoutes from "./routes/swapRoutes.js";
 import path from "path";
+import { fileURLToPath } from 'url';
+
+// Define __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(express.json());
@@ -15,13 +20,13 @@ app.use("/schedules", scheduleRoutes);
 app.use("/swap", swapRoutes);
 
 connectDB();
-app.use(express.static(path.join(path.resolve(), "../client/build")));
-
-app.use(express.static(path.join(path.resolve(), "./upload")));
+app.use(express.static(path.join(__dirname, "../client/build")));
+app.use(express.static(path.join(__dirname, "./upload")));
 
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "../client/build", "index.html"));
 });
+
 const port = process.env.PORT || 4000;
 
 app.get("/", (req, res) => {
