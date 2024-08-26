@@ -43,7 +43,7 @@ usersRouter.post(
           id: user.id,
         },
       };
-      jwt.sign(payload, "jwtSecret", { expiresIn: "5 days" }, (err, token) => {
+      jwt.sign(payload, "jwtSecret", { expiresIn: "15 minutes" }, (err, token) => {
         if (err) throw err;
         res.json({ token });
       });
@@ -113,6 +113,64 @@ usersRouter.get("/me", auth,async (req, res) => {
   } catch (error) {
     console.error(error.message);
     res.status(500).send("Server Error");
+  }
+});
+
+
+// const isOpenForSwap =
+usersRouter.get('/isOpenForSwap', auth, async (req, res) => {
+  try {
+    // Fetch the user's isOpenForSwap status from the database
+    const user = await User.findById(req.user.id).select('isOpenForSwap');
+
+    res.json({ isOpenForSwap: user.isOpenForSwap });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+});
+
+//const updateOpenForSwap = 
+usersRouter.post('/updateOpenForSwap',auth, async (req, res) => {
+  try {
+    const { isOpenForSwap } = req.body;
+
+    // Update the user's isOpenForSwap status in the database
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { isOpenForSwap },
+      { new: true }
+    );
+
+    res.json({ isOpenForSwap: user.isOpenForSwap });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+});
+
+
+// set all users isOpenForSwap to false
+usersRouter.post('/closeAll', auth, async (req, res) => {
+  try {
+    await User.updateMany({}, { isOpenForSwap: false });
+
+    res.json({ msg: 'All users are closed for swap' });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+});
+
+//fetch all users
+usersRouter.get('/all', auth, async (req, res) => {
+
+  try {
+    const users = await User.find().select('-password');
+    res.json(users);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
   }
 });
 
