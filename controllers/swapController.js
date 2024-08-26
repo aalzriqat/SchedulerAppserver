@@ -22,7 +22,14 @@ const validateSwapRequest = (swapId, status, role, adminStatus) => {
 // Helper function for error response
 const handleErrorResponse = (res, error, statusCode = 500) => {
   console.error(error);
-  res.status(statusCode).json({ error: error.message || error });
+  let errorMessage = error.message || error;
+
+  // Custom error messages
+  if (error.code === 11000) {
+    errorMessage = "You have previously requested a swap with this user.";
+  }
+
+  res.status(statusCode).json({ error: errorMessage });
 };
 
 export const createSwapRequest = async (req, res) => {
@@ -45,7 +52,7 @@ export const createSwapRequest = async (req, res) => {
     res.status(201).json(newSwapRequest);
   } catch (err) {
     await session.abortTransaction();
-    handleErrorResponse(res, err.code === 11000 ? 'Duplicate key error' : 'Server error', err.code === 11000 ? 400 : 500);
+    handleErrorResponse(res, err, err.code === 11000 ? 400 : 500);
   } finally {
     session.endSession();
   }
@@ -76,7 +83,7 @@ export const updateSwapStatus = async (req, res) => {
     const updatedSwapRequest = await swapRequest.save();
     res.status(200).json({ updatedSwapRequest });
   } catch (error) {
-    handleErrorResponse(res, 'Error updating swap request status');
+    handleErrorResponse(res, error);
   }
 };
 
