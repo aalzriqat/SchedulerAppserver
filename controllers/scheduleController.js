@@ -81,7 +81,7 @@ Here are the details of your new schedule:
 - **Week:** ${week ? `Week ${week}` : "Not Available"}
 
 You will be able to view your schedule and manage swap requests in your dashboard.
-Dashboard: http://localhost:3000/requester
+Dashboard: https://criftyoo.github.io/Scheduler-Client/
 
 If you have any questions or need further assistance, please feel free to reach out.
 
