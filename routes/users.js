@@ -47,7 +47,7 @@ usersRouter.post(
           id: user.id,
         },
       };
-      jwt.sign(payload, config.get("jwtSecret"), { expiresIn: "15 minutes" }, (err, token) => {
+      jwt.sign(payload, config.get(env.jwtSecret), { expiresIn: "15 minutes" }, (err, token) => {
         if (err) throw err;
         res.json({ token });
       });
