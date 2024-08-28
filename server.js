@@ -4,6 +4,7 @@ import usersRouter from "./routes/users.js";
 import cors from "cors";
 import scheduleRoutes from "./routes/scheduleRoutes.js";
 import swapRoutes from "./routes/swapRoutes.js";
+import preferenceRoutes from "./routes/preferenceRoutes.js";
 import path from "path";
 import { fileURLToPath } from 'url';
 
@@ -18,6 +19,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/users", usersRouter);
 app.use("/schedules", scheduleRoutes);
 app.use("/swap", swapRoutes);
+app.use("/preferences",preferenceRoutes);
 
 connectDB();
 app.use(express.static(path.join(__dirname, "./upload")));
