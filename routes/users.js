@@ -47,7 +47,7 @@ usersRouter.post(
           id: user.id,
         },
       };
-      jwt.sign(payload, config.get(env.jwtSecret), { expiresIn: "15 minutes" }, (err, token) => {
+      jwt.sign(payload, config.get(process.env.jwtSecret), { expiresIn: "15 minutes" }, (err, token) => {
         if (err) throw err;
         res.json({ token });
       });
@@ -86,7 +86,7 @@ usersRouter.post(
           id: user.id,
         },
       };
-      jwt.sign(payload, env.jwtSecret, { expiresIn: "5 days" }, (err, token) => {
+      jwt.sign(payload, process.env.jwtSecret, { expiresIn: "5 days" }, (err, token) => {
         if (err) throw err;
         res.json({ token });
       });
