@@ -1,9 +1,11 @@
-import { Router } from "express";
+import e, { Router } from "express";
 import { check, validationResult } from "express-validator";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import config from "config";
 import User from "../models/User.js";
+import { configDotenv } from "dotenv";
+configDotenv();
 
 
 const usersRouter = Router();
@@ -45,7 +47,7 @@ usersRouter.post(
           id: user.id,
         },
       };
-      jwt.sign(payload, "jwtSecret", { expiresIn: "15 minutes" }, (err, token) => {
+      jwt.sign(payload, config.get("jwtSecret"), { expiresIn: "15 minutes" }, (err, token) => {
         if (err) throw err;
         res.json({ token });
       });
@@ -84,7 +86,7 @@ usersRouter.post(
           id: user.id,
         },
       };
-      jwt.sign(payload, "jwtSecret", { expiresIn: "5 days" }, (err, token) => {
+      jwt.sign(payload, env.jwtSecret, { expiresIn: "5 days" }, (err, token) => {
         if (err) throw err;
         res.json({ token });
       });
@@ -101,7 +103,7 @@ const auth = (req, res, next) => {
     return res.status(401).json({ msg: "No token, authorization denied" });
   }
   try {
-    const decoded = jwt.verify(token, "jwtSecret");
+    const decoded = jwt.verify(token, env.gwtSecret);
     req.user = decoded.user;
     next();
   } catch (error) {

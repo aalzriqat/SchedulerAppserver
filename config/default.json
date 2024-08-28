@@ -1,5 +1,0 @@
-{
-    "mongoConnectionString":"mongodb+srv://aalzriqat:Ouh3whov%40%403@schedule-manager.hqbv6ke.mongodb.net/?retryWrites=true&w=majority&appName=Schedule-Manager",
-    "jwtSecret": "jwtSecretToken"
-   
-}
