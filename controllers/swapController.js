@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { isValidObjectId } from "mongoose";
 import SwapRequest from "../models/SwapRequest.js";
+import { io } from '../server.js'; // Import the io instance
 
 // Helper function for validation
 const validateSwapRequest = (swapId, status, role, adminStatus) => {
@@ -49,6 +50,7 @@ export const createSwapRequest = async (req, res) => {
 
     await newSwapRequest.save({ session });
     await session.commitTransaction();
+    io.emit('notification', { message: 'New swap request created!' }); // Emit notification
     res.status(201).json(newSwapRequest);
   } catch (err) {
     await session.abortTransaction();
@@ -81,6 +83,7 @@ export const updateSwapStatus = async (req, res) => {
     swapRequest.updatedAt = new Date();
 
     const updatedSwapRequest = await swapRequest.save();
+    io.emit('notification', { message: 'Swap request updated!' }); // Emit notification
     res.status(200).json({ updatedSwapRequest });
   } catch (error) {
     handleErrorResponse(res, error);
@@ -127,6 +130,7 @@ export const cancelSwapRequest = async (req, res) => {
     }
     swapRequest.status = "cancelled";
     await swapRequest.save();
+    io.emit('notification', { message: 'Swap request cancelled!' }); // Emit notification
     res.status(200).json(swapRequest);
   } catch (error) {
     handleErrorResponse(res, error);
