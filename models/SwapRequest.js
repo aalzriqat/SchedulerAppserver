@@ -23,7 +23,7 @@ const swapRequestSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ["pending", "accepted", "rejected", "cancelled",'approved','declined'],
+    enum: ["pending", "accepted", "rejected", "cancelled", "approved", "declined"],
     default: "pending",
   },
   adminApproval: {
@@ -34,18 +34,6 @@ const swapRequestSchema = new mongoose.Schema({
   message: { type: String },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
-}, {
-  indexes: [
-    {
-      fields: {
-        requester: 1,
-        requesterSchedule: 1,
-        recipient: 1,
-        recipientSchedule: 1,
-      },
-      options: { unique: true },
-    },
-  ],
 });
 
 // Middleware to update related documents
@@ -69,6 +57,37 @@ swapRequestSchema.post('remove', async function(doc) {
     { _id: { $in: [doc.requesterSchedule, doc.recipientSchedule] } },
     { $pull: { swapRequests: doc._id } }
   );
+});
+
+// Pre-save hook to check for duplicates only on creation
+swapRequestSchema.pre('save', async function(next) {
+  if (this.isNew) {
+    const existingRequest = await mongoose.model('SwapRequest').findOne({
+      requester: this.requester,
+      requesterSchedule: this.requesterSchedule,
+      recipient: this.recipient,
+      recipientSchedule: this.recipientSchedule,
+    });
+
+    if (existingRequest) {
+      const error = new Error('You have already requested a swap with this user.');
+      error.name = 'DuplicateSwapRequestError';
+      return next(error);
+    }
+  }
+  next();
+});
+
+// Indexing
+swapRequestSchema.index({ requester: 1, requesterSchedule: 1, recipient: 1, recipientSchedule: 1 }, { unique: true });
+
+// Error handling for duplicate key errors
+swapRequestSchema.post('save', function(error, doc, next) {
+  if (error.name === 'MongoError' && error.code === 11000) {
+    next(new Error('You have already requested a swap with this user.'));
+  } else {
+    next(error);
+  }
 });
 
 export default mongoose.model("SwapRequest", swapRequestSchema);

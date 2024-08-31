@@ -75,7 +75,8 @@ export const updateSwapStatus = async (req, res) => {
       return res.status(404).json({ error: "Swap request not found" });
     }
 
-    if (role === 'admin') {
+    // Update the status and adminApproval fields
+    if (adminStatus) {
       swapRequest.adminApproval = adminStatus;
     }
     swapRequest.status = status;
