@@ -5,6 +5,9 @@ const scheduleSchema = new mongoose.Schema({
   workingHours: { type: String, required: true },
   offDays: { type: [String], required: true },
   week: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+  skill: { type: [String], enum: ["phone", "mu", "email", "blinded"] },
   swapRequests: [{ type: mongoose.Schema.Types.ObjectId, ref: "SwapRequest" }],
 });
 
