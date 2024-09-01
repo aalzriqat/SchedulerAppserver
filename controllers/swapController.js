@@ -27,7 +27,7 @@ const handleErrorResponse = (res, error, statusCode = 500) => {
 
   // Custom error messages
   if (error.code === 11000) {
-    errorMessage = "You have previously requested a swap with this user.";
+    errorMessage = "You have previously requested a swap with this user for the selected week.";
   }
 
   res.status(statusCode).json({ error: errorMessage });
