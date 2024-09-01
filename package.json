@@ -6,7 +6,9 @@
     "start": "node server.js",
     "server": "nodemon server.js",
     "client": "npm start --prefix ../client",
-    "dev": "cross-env NODE_OPTIONS=--trace-deprecation concurrently \"npm:server\" \"npm:client\""
+    "dev": "cross-env NODE_OPTIONS=--trace-deprecation concurrently \"npm:server\" \"npm:client\"",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build"
   },
   "author": "alzriqat",
   "license": "MIT",
