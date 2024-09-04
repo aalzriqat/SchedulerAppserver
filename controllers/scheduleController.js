@@ -55,7 +55,7 @@ const handleErrorResponse = (res, error, statusCode = 500) => {
 };
 
 // Helper function to send email
-const sendEmail = async (username, workingHours, offDays, week) => {
+const sendEmail = async (username, workingHours, offDays, week, skill, marketPlace) => {
   const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
@@ -75,9 +75,11 @@ Your schedule for next week(s) has been uploaded successfully.
 
 Here are the details of your new schedule:
 
-- **Working Hours:** ${workingHours || "Not Available"}
-- **Off Days:** ${offDays || "Not Available"}
-- **Week:** ${week ? `Week ${week}` : "Not Available"}
+- Working Hours: ${workingHours || "Not Available"}
+- Off Days: ${offDays || "Not Available"}
+- Week: ${week ? `Week ${week}` : "Not Available"}
+- Skill: ${skill || "Not Available"}
+- Market Place: ${marketPlace || "Not Available"}
 
 You will be able to view your schedule and manage swap requests in your dashboard.
 Dashboard: https://criftyoo.github.io/Scheduler-Client/
@@ -85,21 +87,39 @@ Dashboard: https://criftyoo.github.io/Scheduler-Client/
 If you have any questions or need further assistance, please feel free to reach out.
 
 Best regards,
-The Workflow Team
+Workflow Team
     `,
   };
 
   return transporter.sendMail(mailOptions);
 };
 
-export const getAllSchedules = async (req, res) => {
+export const getAllSchedules = async (_, res) => {
   try {
-    const schedules = await Schedule.find().populate("user").lean();
+    const schedules = await Schedule.find()
+      .populate({
+        path: 'user',
+        select: 'id isOpenForSwap role swapRequests skill marketplace'
+      })
+      .lean();
 
     if (!schedules.length) {
       return res.status(404).json({ message: "No schedules found" });
     }
-    res.status(200).json(schedules);
+
+    const filteredSchedules = schedules.map(schedule => ({
+      ...schedule,
+      user: {
+        _id: schedule.user._id,
+        isOpenForSwap: schedule.user.isOpenForSwap,
+        role: schedule.user.role,
+        swapRequests: schedule.user.swapRequests,
+        skill: schedule.user.skill,
+        marketplace: schedule.user.marketplace
+      }
+    }));
+
+    res.json(filteredSchedules);
   } catch (error) {
     handleErrorResponse(res, error);
   }
@@ -124,7 +144,7 @@ export const uploadSchedule = [
       const errors = [];
 
       for (const row of schedulesData) {
-        const { username, offDays, workingHours, week } = row;
+        const { username, offDays, workingHours, week,skill,marketPlace } = row;
 
         const user = await User.findOne({ username });
 
@@ -147,10 +167,12 @@ export const uploadSchedule = [
           workingHours,
           offDays: offDays.split(","),
           week,
+          skill,
+          marketPlace
         });
 
         schedulesToSave.push(schedule);
-        emailPromises.push(sendEmail(username, workingHours, offDays, week));
+        emailPromises.push(sendEmail(username, workingHours, offDays, week,skill,marketPlace));
       }
 
       if (schedulesToSave.length > 0) {

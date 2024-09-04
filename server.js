@@ -1,6 +1,6 @@
 import express from "express";
 import connectDB from "./config/db.js";
-import usersRouter from "./routes/users.js";
+import usersRouter from "./routes/usersRoutes.js";
 import cors from "cors";
 import scheduleRoutes from "./routes/scheduleRoutes.js";
 import swapRoutes from "./routes/swapRoutes.js";
@@ -13,7 +13,12 @@ import { fileURLToPath } from 'url';
 import http from 'http';
 import { Server } from 'socket.io';
 import dotenv from 'dotenv';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import compression from 'compression';
+
 dotenv.config();
+
 // Define __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -22,16 +27,31 @@ const app = express();
 const server = http.createServer(app);
 export const io = new Server(server, {
   cors: {
-    origin: "*",
+    origin: (process.env.ALLOWED_ORIGINS || 'http://localhost:3000').split(','),
     methods: ["GET", "POST"]
   }
 });
 
 const userSocketMap = new Map();
 
+// Security middlewares
+app.use(helmet());
+app.use(cors({
+  origin: (process.env.ALLOWED_ORIGINS || 'http://localhost:3000').split(',')
+}));
 app.use(express.json());
-app.use(cors());
 app.use(express.urlencoded({ extended: true }));
+app.use(compression());
+
+// // Rate limiting
+// const limiter = rateLimit({
+//   windowMs: 15 * 60 * 1000, // 15 minutes
+//   max: 100, // limit each IP to 100 requests per windowMs
+//   message: "Too many requests from this IP, please try again later."
+// });
+// app.use(limiter);
+
+// Define routes
 app.use("/users", usersRouter);
 app.use("/schedules", scheduleRoutes);
 app.use("/swap", swapRoutes);
@@ -43,6 +63,7 @@ app.post("/reportIssues", reportIssues);
 connectDB();
 app.use(express.static(path.join(__dirname, "./upload")));
 app.use(express.static(path.join(__dirname, "../client/build")));
+
 const port = process.env.PORT || 4000;
 
 app.get("/", (req, res) => {

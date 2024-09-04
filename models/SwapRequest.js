@@ -21,6 +21,10 @@ const swapRequestSchema = new mongoose.Schema({
     ref: "Schedule",
     required: true,
   },
+  skill: {type: String,
+    enum: ["phoneOnly", "Email", "PhoneMU", "MuOnly", "Specialty", "General", "Other"],
+    },
+    marketPlace:{type: String,enum: ["AE", "SA","EG","UK","Specialty"]},
   status: {
     type: String,
     enum: ["pending", "accepted", "rejected", "cancelled", "approved", "declined"],
