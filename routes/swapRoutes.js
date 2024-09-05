@@ -8,7 +8,8 @@ import {
   getSwapRequestByUserId,
   getSwapRequestByRequesterId,
   getSentSwapRequestsByThisUser,
-  getApprovedSwapRequests
+  getApprovedSwapRequests,
+  cancelAllSwapRequests
 } from "../controllers/swapController.js";
 const router = express.Router();
 
@@ -18,4 +19,8 @@ router.get("/swaps", getSwapRequests);
 router.get("/received/:userId", getReceivedSwapRequestsToThisUser);
 router.get("/sent/:userId", getSentSwapRequestsByThisUser);
 router.get("/swap/approved-requests", getApprovedSwapRequests);
+router.get("/swap/:swapId", getSwapRequestById);
+router.get("/user/:userId", getSwapRequestByUserId);
+router.get("/requester/:requesterId", getSwapRequestByRequesterId);
+router.put("/cancel-all", cancelAllSwapRequests);
 export default router;

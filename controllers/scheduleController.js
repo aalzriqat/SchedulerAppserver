@@ -47,6 +47,84 @@ const upload = multer({
   },
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
 });
+// scheduleController.js
+
+const normalizeTimeRange = (timeRange) => {
+  if (!timeRange) return null;
+  return timeRange.replace(/\s+/g, ' ').replace(' - ', '-').replace(' ', ' - ');
+};
+
+const parseStartTime = (timeRange) => {
+  if (!timeRange) {
+    console.error("Time range is undefined or null:", timeRange);
+    return 0;
+  }
+  const normalizedTimeRange = normalizeTimeRange(timeRange);
+  const [start] = normalizedTimeRange.split("-");
+  if (!start) {
+    console.error("Invalid time range format:", normalizedTimeRange);
+    return 0;
+  }
+  const [startHours, startMinutes] = start.split(":").map(Number);
+  if (isNaN(startHours) || isNaN(startMinutes)) {
+    console.error("Invalid time values in time range:", normalizedTimeRange);
+    return 0;
+  }
+
+  return startHours * 60 + startMinutes;
+};
+
+const isStartTimeGreaterOrEqual = (range1, range2) => {
+  const start1 = parseStartTime(range1);
+  const start2 = parseStartTime(range2);
+
+  return start1 >= start2;
+};
+
+export const getAvailableSchedules = (req, res) => {
+  const { schedules, users, user } = req.body;
+
+  const requesterSchedule = schedules.find(
+    (schedule) => schedule.user && schedule.user._id === user._id
+  );
+
+  const availableSchedules = schedules
+    .sort((a, b) => new Date(b.uploadTime) - new Date(a.uploadTime))
+    .filter((schedule, index, self) => {
+      const scheduleUser = users.find((u) => u._id === schedule.user._id);
+      const latestSchedule = self.find((s) => s.user._id === schedule.user._id);
+
+      const scheduleWorkingHours = schedule.workingHours;
+      const requesterScheduleWorkingHours = requesterSchedule?.workingHours;
+
+      if (!scheduleWorkingHours || !requesterScheduleWorkingHours) {
+        console.error("Working hours are undefined for schedule or requester:", scheduleWorkingHours, requesterScheduleWorkingHours);
+        return false;
+      }
+
+      const normalizedScheduleWorkingHours = normalizeTimeRange(scheduleWorkingHours);
+      const normalizedRequesterScheduleWorkingHours = normalizeTimeRange(requesterScheduleWorkingHours);
+
+      const result = isStartTimeGreaterOrEqual(normalizedScheduleWorkingHours, normalizedRequesterScheduleWorkingHours);
+
+      console.log("Comparison result:", result);
+      console.log("Schedule working hours:", normalizedScheduleWorkingHours, "Requester working hours:", normalizedRequesterScheduleWorkingHours);
+
+      return (
+        scheduleUser &&
+        scheduleUser._id !== user._id &&
+        scheduleUser.isOpenForSwap === true &&
+        scheduleUser.role === "employee" &&
+        schedule?.skill === requesterSchedule?.skill &&
+        schedule?.marketPlace === requesterSchedule?.marketPlace &&
+        schedule._id === latestSchedule._id &&
+        result === true
+      );
+    });
+
+  res.json(availableSchedules);
+};
+
 
 // Helper function for error response
 const handleErrorResponse = (res, error, statusCode = 500) => {
