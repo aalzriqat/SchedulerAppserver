@@ -35,7 +35,12 @@ const userSocketMap = new Map();
 
 // Security middlewares
 app.use(helmet());
-app.use(cors());
+app.use(cors(
+  {
+    origin: process.env.NODE_ENV === 'production' ? process.env.PRODUCTION_URL : process.env.DEV_URL,
+    credentials: true,
+  }
+));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(compression());
