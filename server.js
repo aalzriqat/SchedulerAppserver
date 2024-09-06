@@ -37,7 +37,8 @@ const userSocketMap = new Map();
 // Security middlewares
 app.use(helmet());
 app.use(cors({
-  origin: (process.env.ALLOWED_ORIGINS || 'http://localhost:3000').split(',')
+  origin: (process.env.ALLOWED_ORIGINS || 'http://localhost:3000').split(','),
+  methods: ["GET", "POST","PUT","DELETE","PATCH"],
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
