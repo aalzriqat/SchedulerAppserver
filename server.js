@@ -37,20 +37,13 @@ const userSocketMap = new Map();
 // Security middlewares
 app.use(helmet());
 app.use(cors({
-  origin: (process.env.ALLOWED_ORIGINS).split(','),
-  methods: ["GET", "POST","PUT","DELETE","PATCH"],
+  origin: (process.env.ALLOWED_ORIGINS || 'http://localhost:3000,http://scheduler-server-a6deb2hrgug8evbw.westeurope-01.azurewebsites.net').split(','),
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(compression());
 
-// // Rate limiting
-// const limiter = rateLimit({
-//   windowMs: 15 * 60 * 1000, // 15 minutes
-//   max: 100, // limit each IP to 100 requests per windowMs
-//   message: "Too many requests from this IP, please try again later."
-// });
-// app.use(limiter);
 
 // Define routes
 app.use("/users", usersRouter);
