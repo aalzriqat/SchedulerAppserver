@@ -27,7 +27,7 @@ const app = express();
 const server = http.createServer(app);
 export const io = new Server(server, {
   cors: {
-    origin: (process.env.ALLOWED_ORIGINS || 'http://localhost:3000').split(','),
+    origin: (process.env.ALLOWED_ORIGINS || 'http://localhost:3000,http://scheduler-server-a6deb2hrgug8evbw.westeurope-01.azurewebsites.net').split(','),
     methods: ["GET", "POST"]
   }
 });
@@ -37,7 +37,7 @@ const userSocketMap = new Map();
 // Security middlewares
 app.use(helmet());
 app.use(cors({
-  origin: (process.env.ALLOWED_ORIGINS || 'http://localhost:3000').split(','),
+  origin: (process.env.ALLOWED_ORIGINS).split(','),
   methods: ["GET", "POST","PUT","DELETE","PATCH"],
 }));
 app.use(express.json());
