@@ -217,4 +217,35 @@ export const getApprovedSwapRequests = async (req, res) => {
     handleErrorResponse(res, error);
   }
 };
+// cancel all swap requests for requester and recipient if status changed to accepted 
+
+
+export const cancelAllPendingSwapRequests = async (req, res) => {
+  const { requesterId, recipientId } = req.params;
+
+  if (!requesterId || !recipientId) {
+    return res.status(400).json({ message: 'Requester ID and Recipient ID are required.' });
+  }
+
+  try {
+    const result = await SwapRequest.updateMany(
+      {
+        $or: [
+          { user: requesterId, status: 'pending' },
+          { recipientId: recipientId, status: 'pending' }
+        ]
+      },
+      { status: 'cancelled' }
+    );
+
+    if (result.nModified === 0) {
+      return res.status(404).json({ message: 'No pending swap requests found for the specified users.' });
+    }
+
+    res.status(200).json({ message: 'All pending swap requests cancelled.', result });
+  } catch (error) {
+    console.error('Error cancelling pending swap requests:', error);
+    res.status(500).json({ message: 'Internal server error.' });
+  }
+};
 

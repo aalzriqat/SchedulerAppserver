@@ -58,7 +58,7 @@ app.use("/swap", swapRoutes);
 app.use("/preferences", preferenceRoutes);
 app.use("/leaves", leavePlannerRoutes);
 app.use("/news", newsRoutes);
-app.post("/reportIssues", reportIssues);
+app.post("/report-issues", reportIssues);
 
 connectDB();
 app.use(express.static(path.join(__dirname, "./upload")));
