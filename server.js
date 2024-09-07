@@ -36,14 +36,12 @@ const userSocketMap = new Map();
 // Security middlewares
 app.use(helmet());
 const corsOptions = {
-  origin: (origin, callback) => {
-    console.log('Origin:', origin);
-    callback(null, true); // Allow all origins for debugging
-  },
+  origin: ['https://criftyoo.github.io', 'https://criftyoo.github.io/client'],
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   credentials: true,
   optionsSuccessStatus: 204
 };
+
 
 app.use(cors(corsOptions)); 
 app.use(express.json());
