@@ -9,13 +9,13 @@ import leavePlannerRoutes from "./routes/leavePlannerRoutes.js";
 import newsRoutes from "./routes/newsRoutes.js";
 import { reportIssues } from "./controllers/reportIssuesController.js";
 import path from "path";
-import { fileURLToPath } from 'url';
-import http from 'http';
-import { Server } from 'socket.io';
-import dotenv from 'dotenv';
-import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
-import compression from 'compression';
+import { fileURLToPath } from "url";
+import http from "http";
+import { Server } from "socket.io";
+import dotenv from "dotenv";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
+import compression from "compression";
 
 dotenv.config();
 
@@ -23,27 +23,31 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Ensure the uploads directory exists
+const uploadsDir = path.join(__dirname, "uploads");
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir);
+}
+
 const app = express();
 const server = http.createServer(app);
 export const io = new Server(server, {
   cors: {
-    origin: '*',
-  }
+    origin: "*",
+  },
 });
 
 const userSocketMap = new Map();
 
-// Security middlewares
 app.use(helmet());
 const corsOptions = {
-  origin: ['https://criftyoo.github.io', 'https://criftyoo.github.io/client'],
-  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  origin: ["https://criftyoo.github.io", "https://criftyoo.github.io/client"],
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
   credentials: true,
-  optionsSuccessStatus: 204
+  optionsSuccessStatus: 204,
 };
 
-
-app.use(cors(corsOptions)); 
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(compression());
@@ -68,15 +72,15 @@ app.get("/", (req, res) => {
 });
 
 // Socket.IO connection
-io.on('connection', (socket) => {
-  console.log('New client connected');
+io.on("connection", (socket) => {
+  console.log("New client connected");
 
-  socket.on('register', (userId) => {
+  socket.on("register", (userId) => {
     userSocketMap.set(userId, socket.id);
   });
 
-  socket.on('disconnect', () => {
-    console.log('Client disconnected');
+  socket.on("disconnect", () => {
+    console.log("Client disconnected");
     userSocketMap.forEach((value, key) => {
       if (value === socket.id) {
         userSocketMap.delete(key);
@@ -86,15 +90,15 @@ io.on('connection', (socket) => {
 });
 
 // Example endpoint to trigger notifications
-app.post('/notify', (req, res) => {
+app.post("/notify", (req, res) => {
   const { userId, notification } = req.body;
   const recipientSocketId = userSocketMap.get(userId);
 
   if (recipientSocketId) {
-    io.to(recipientSocketId).emit('notification', notification);
+    io.to(recipientSocketId).emit("notification", notification);
   }
 
-  res.status(200).send('Notification sent');
+  res.status(200).send("Notification sent");
 });
 
 server.listen(port, () => {

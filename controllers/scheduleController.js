@@ -16,6 +16,12 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// Ensure the uploads directory exists
+const uploadsDir = path.join(__dirname, '../uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir);
+}
+
 // Define storage configuration for multer
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -106,10 +112,6 @@ export const getAvailableSchedules = (req, res) => {
       const normalizedRequesterScheduleWorkingHours = normalizeTimeRange(requesterScheduleWorkingHours);
 
       const result = isStartTimeGreaterOrEqual(normalizedScheduleWorkingHours, normalizedRequesterScheduleWorkingHours);
-
-      console.log("Comparison result:", result);
-      console.log("Schedule working hours:", normalizedScheduleWorkingHours, "Requester working hours:", normalizedRequesterScheduleWorkingHours);
-
       return (
         scheduleUser &&
         scheduleUser._id !== user._id &&
