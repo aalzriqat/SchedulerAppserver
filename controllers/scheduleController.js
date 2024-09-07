@@ -1,8 +1,8 @@
+import { BlobServiceClient } from "@azure/storage-blob";
 import multer from "multer";
 import nodemailer from "nodemailer";
 import xlsx from "xlsx";
 import path from "path";
-import fs from "fs";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 import User from "../models/User.js";
@@ -16,21 +16,12 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Ensure the uploads directory exists
-const uploadsDir = path.join(__dirname, '../uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir);
-}
+// Configure Azure Blob Storage
+const blobServiceClient = BlobServiceClient.fromConnectionString(process.env.AZURE_STORAGE_CONNECTION_STRING);
+const containerClient = blobServiceClient.getContainerClient(process.env.AZURE_STORAGE_CONTAINER_NAME);
 
 // Define storage configuration for multer
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, "./uploads");
-  },
-  filename: function (req, file, cb) {
-    cb(null, `${Date.now()}-${file.originalname}`);
-  },
-});
+const storage = multer.memoryStorage();
 
 const upload = multer({
   storage,
@@ -44,8 +35,6 @@ const upload = multer({
     const mimetype = allowedMimeTypes.includes(file.mimetype);
     const extname = allowedExtensions.includes(path.extname(file.originalname).toLowerCase());
 
-   
-
     if (mimetype && extname) {
       return cb(null, true);
     }
@@ -53,39 +42,6 @@ const upload = multer({
   },
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
 });
-// scheduleController.js
-
-const normalizeTimeRange = (timeRange) => {
-  if (!timeRange) return null;
-  return timeRange.replace(/\s+/g, ' ').replace(' - ', '-').replace(' ', ' - ');
-};
-
-const parseStartTime = (timeRange) => {
-  if (!timeRange) {
-    console.error("Time range is undefined or null:", timeRange);
-    return 0;
-  }
-  const normalizedTimeRange = normalizeTimeRange(timeRange);
-  const [start] = normalizedTimeRange.split("-");
-  if (!start) {
-    console.error("Invalid time range format:", normalizedTimeRange);
-    return 0;
-  }
-  const [startHours, startMinutes] = start.split(":").map(Number);
-  if (isNaN(startHours) || isNaN(startMinutes)) {
-    console.error("Invalid time values in time range:", normalizedTimeRange);
-    return 0;
-  }
-
-  return startHours * 60 + startMinutes;
-};
-
-const isStartTimeGreaterOrEqual = (range1, range2) => {
-  const start1 = parseStartTime(range1);
-  const start2 = parseStartTime(range2);
-
-  return start1 >= start2;
-};
 
 export const getAvailableSchedules = (req, res) => {
   const { schedules, users, user } = req.body;
@@ -127,7 +83,6 @@ export const getAvailableSchedules = (req, res) => {
   res.json(availableSchedules);
 };
 
-
 // Helper function for error response
 const handleErrorResponse = (res, error, statusCode = 500) => {
   console.error(error);
@@ -137,7 +92,7 @@ const handleErrorResponse = (res, error, statusCode = 500) => {
 // Helper function to send email
 const sendEmail = async (username, workingHours, offDays, week, skill, marketPlace) => {
   const transporter = nodemailer.createTransport({
-    service: "gmail",
+ service: "gmail",
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
@@ -213,8 +168,16 @@ export const uploadSchedule = [
         return res.status(400).json({ error: "No file uploaded" });
       }
 
-      const filePath = path.join(__dirname, "../uploads", req.file.filename);
-      const workbook = xlsx.readFile(filePath);
+      const blobName = `${Date.now()}-${req.file.originalname}`;
+      const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+
+      await blockBlobClient.uploadData(req.file.buffer, {
+        blobHTTPHeaders: { blobContentType: req.file.mimetype },
+      });
+
+      const downloadUrl = blockBlobClient.url;
+
+      const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
       const sheetName = workbook.SheetNames[0];
       const sheet = workbook.Sheets[sheetName];
       const schedulesData = xlsx.utils.sheet_to_json(sheet);
@@ -224,7 +187,7 @@ export const uploadSchedule = [
       const errors = [];
 
       for (const row of schedulesData) {
-        const { username, offDays, workingHours, week,skill,marketPlace } = row;
+        const { username, offDays, workingHours, week, skill, marketPlace } = row;
 
         const user = await User.findOne({ username });
 
@@ -252,7 +215,7 @@ export const uploadSchedule = [
         });
 
         schedulesToSave.push(schedule);
-        emailPromises.push(sendEmail(username, workingHours, offDays, week,skill,marketPlace));
+        emailPromises.push(sendEmail(username, workingHours, offDays, week, skill, marketPlace));
       }
 
       if (schedulesToSave.length > 0) {
@@ -260,13 +223,12 @@ export const uploadSchedule = [
         await Promise.all(emailPromises);
       }
 
-      fs.unlinkSync(filePath);
-
       if (errors.length > 0) {
         res.status(409).json({ message: errors });
       } else {
         res.status(201).json({
           message: "Schedules uploaded and emails sent successfully!",
+          downloadUrl,
         });
       }
     } catch (error) {

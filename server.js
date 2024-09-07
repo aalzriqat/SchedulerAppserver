@@ -16,6 +16,7 @@ import dotenv from "dotenv";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import compression from "compression";
+import { BlobServiceClient } from "@azure/storage-blob";
 
 dotenv.config();
 
@@ -23,11 +24,9 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Ensure the uploads directory exists
-const uploadsDir = path.join(__dirname, "uploads");
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir);
-}
+// Configure Azure Blob Storage
+const blobServiceClient = BlobServiceClient.fromConnectionString(process.env.AZURE_STORAGE_CONNECTION_STRING);
+const containerClient = blobServiceClient.getContainerClient(process.env.AZURE_STORAGE_CONTAINER_NAME);
 
 const app = express();
 const server = http.createServer(app);
@@ -62,7 +61,6 @@ app.use("/news", newsRoutes);
 app.post("/report-issues", reportIssues);
 
 connectDB();
-app.use(express.static(path.join(__dirname, "./upload")));
 app.use(express.static(path.join(__dirname, "../client/build")));
 
 const port = process.env.PORT || 4000;
