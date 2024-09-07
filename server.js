@@ -36,13 +36,17 @@ const userSocketMap = new Map();
 // Security middlewares
 app.use(helmet());
 const corsOptions = {
-  origin: 'scheduler-server-a6deb2hrgug8evbw.westeurope-01.azurewebsites.net', // Replace with your allowed origin
+  origin: (origin, callback) => {
+    console.log('Origin:', origin);
+    callback(null, true); // Allow all origins for debugging
+  },
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   credentials: true,
   optionsSuccessStatus: 204
 };
 
-app.use(cors(corsOptions));app.use(express.json());
+app.use(cors(corsOptions)); 
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(compression());
 
