@@ -16,18 +16,18 @@ import rateLimit from 'express-rate-limit';
 
 const usersRouter = Router();
 
-// Rate limiting for sensitive routes
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // limit each IP to 5 requests per windowMs
-  message: "Too many login attempts from this IP, please try again later."
-});
+// // Rate limiting for sensitive routes
+// const authLimiter = rateLimit({
+//   windowMs: 15 * 60 * 1000, // 15 minutes
+//   max: 100, // limit each IP to 5 requests per windowMs
+//   message: "Too many login attempts from this IP, please try again later."
+// });
 
 // Register User
 usersRouter.post("/register", registerUser);
 
 // Login User
-usersRouter.post("/login", authLimiter, loginUser);
+usersRouter.post("/login", loginUser);
 
 // Get current user
 usersRouter.get("/me", auth, getCurrentUser);

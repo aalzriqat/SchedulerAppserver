@@ -249,3 +249,24 @@ export const cancelAllPendingSwapRequests = async (req, res) => {
   }
 };
 
+//cancel all swap requests for both requester and recipient once a swap status updates to approved
+
+export const cancelAllSwapRequests = async (req, res) => {
+  const { requesterId, recipientId } = req.body;
+
+  try {
+    await SwapRequest.updateMany(
+      { requester: requesterId, status: { $ne: "approved" } },
+      { status: "cancelled" }
+    );
+
+    await SwapRequest.updateMany(
+      { recipient: recipientId, status: { $ne: "approved" } },
+      { status: "cancelled" }
+    );
+
+    res.status(200).json({ message: "All swap requests cancelled" });
+  } catch (error) {
+    handleErrorResponse(res, error);
+  }
+};

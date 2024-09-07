@@ -75,7 +75,6 @@ export const registerUser = [
 
 // Login User
 export const loginUser = [
-  limiter,
   check("email", "Please include a valid email").isEmail(),
   check("password", "Password is required").exists(),
   asyncHandler(async (req, res) => {
