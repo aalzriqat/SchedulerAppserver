@@ -44,7 +44,7 @@ const userSocketMap = new Map();
 
 app.use(helmet());
 const corsOptions = {
-  origin: ["https://criftyoo.github.io", "https://criftyoo.github.io/client"],
+  origin: ["https://criftyoo.github.io", "https://criftyoo.github.io/client", "http://localhost:3000"],
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
   credentials: true,
   optionsSuccessStatus: 204,

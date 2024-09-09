@@ -16,6 +16,7 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+
 // Configure Azure Blob Storage
 const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
 if (!connectionString) {
@@ -26,7 +27,14 @@ const containerClient = blobServiceClient.getContainerClient(process.env.AZURE_S
 
 // Define storage configuration for multer
 const storage = multer.memoryStorage();
-
+const localStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/');  // Folder where files will be uploaded
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  }
+});
 const upload = multer({
   storage,
   fileFilter: (req, file, cb) => {
@@ -168,9 +176,14 @@ export const uploadSchedule = [
   upload.single("file"),
   async (req, res) => {
     try {
+      console.log("Received upload request");
+
       if (!req.file) {
+        console.log("No file uploaded");
         return res.status(400).json({ error: "No file uploaded" });
       }
+
+      console.log("File uploaded:", req.file.originalname);
 
       const blobName = `${Date.now()}-${req.file.originalname}`;
       const blockBlobClient = containerClient.getBlockBlobClient(blobName);
@@ -179,12 +192,16 @@ export const uploadSchedule = [
         blobHTTPHeaders: { blobContentType: req.file.mimetype },
       });
 
+      console.log("File uploaded to Azure Blob Storage:", blobName);
+
       const downloadUrl = blockBlobClient.url;
 
       const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
       const sheetName = workbook.SheetNames[0];
       const sheet = workbook.Sheets[sheetName];
       const schedulesData = xlsx.utils.sheet_to_json(sheet);
+
+      console.log("Parsed Excel file:", schedulesData);
 
       const schedulesToSave = [];
       const emailPromises = [];
@@ -193,9 +210,12 @@ export const uploadSchedule = [
       for (const row of schedulesData) {
         const { username, offDays, workingHours, week, skill, marketPlace } = row;
 
+        console.log("Processing row:", row);
+
         const user = await User.findOne({ username });
 
         if (!user) {
+          console.log(`User with username ${username} not found`);
           errors.push(`User with username ${username} not found`);
           continue;
         }
@@ -205,6 +225,7 @@ export const uploadSchedule = [
           week,
         });
         if (existingSchedule) {
+          console.log(`${username}, Week ${week} schedule already exists`);
           errors.push(`${username}, Week ${week} schedule already exists`);
           continue;
         }
@@ -225,9 +246,11 @@ export const uploadSchedule = [
       if (schedulesToSave.length > 0) {
         await Schedule.insertMany(schedulesToSave);
         await Promise.all(emailPromises);
+        console.log("Schedules saved and emails sent");
       }
 
       if (errors.length > 0) {
+        console.log("Errors encountered:", errors);
         res.status(409).json({ message: errors });
       } else {
         res.status(201).json({
@@ -236,6 +259,7 @@ export const uploadSchedule = [
         });
       }
     } catch (error) {
+      console.error("Error uploading schedule:", error);
       handleErrorResponse(res, error);
     }
   },

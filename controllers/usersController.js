@@ -66,7 +66,7 @@ export const registerUser = [
       },
     };
 
-    jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "15m" }, (err, token) => {
+    jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "5d" }, (err, token) => {
       if (err) throw err;
       res.json({ token });
     });
@@ -100,7 +100,7 @@ export const loginUser = [
       },
     };
 
-    jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "5 days" }, (err, token) => {
+    jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "5d" }, (err, token) => {
       if (err) throw err;
       res.json({ token });
     });
