@@ -44,10 +44,10 @@ export const getUserLeaveRequestsById = async (req, res) => {
 // Update a leave request
 export const updateLeaveRequest = async (req, res) => {
   try {
-    const { id, fromDate, toDate, reason, status, OU, adminApproval, message } = req.body;
+    const { _id, fromDate, toDate, reason, status, OU, adminApproval, message } = req.body; // Changed id to _id
 
     // Find the existing leave request
-    const existingLeaveRequest = await leavePlanner.findById(id);
+    const existingLeaveRequest = await leavePlanner.findById(_id); // Use _id here
     if (!existingLeaveRequest) {
       return res.status(404).json({ msg: "Leave request not found" });
     }
@@ -59,7 +59,7 @@ export const updateLeaveRequest = async (req, res) => {
 
     // Perform the update
     const leaveRequest = await leavePlanner.findByIdAndUpdate(
-      id,
+      _id, // Use _id here
       { fromDate, toDate, reason, status, OU, adminApproval, message, updatedAt: Date.now() },
       { new: true }
     );
