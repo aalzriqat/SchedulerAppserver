@@ -111,9 +111,13 @@ export const getSentSwapRequestsByThisUser = async (req, res) => {
 
   try {
     const swapRequests = await SwapRequest.find({ requester: userId })
+      .populate("requester", "username")
       .populate("recipient", "username")
       .populate("status")
-      .populate("recipientSchedule");
+      .populate("recipientSchedule")
+      .populate("requesterSchedule")
+      
+
 
     res.status(200).json(swapRequests);
   } catch (error) {

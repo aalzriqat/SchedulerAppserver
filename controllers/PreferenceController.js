@@ -40,10 +40,10 @@ export const updatePreference = async (req, res) => {
 };
 
 export const getPreferenceByUser = async (req, res) => {
-  const { userId } = req.params;
+  const { user } = req.params; // Changed from userId to user
 
   try {
-    const preference = await Preference.findOne({ user: userId });
+    const preference = await Preference.findOne({ user: user }); // Changed from userId to user
     if (!preference) {
       return res.status(404).json({ error: "Preference not found" });
     }

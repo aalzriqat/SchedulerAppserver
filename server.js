@@ -16,7 +16,7 @@ import dotenv from "dotenv";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import compression from "compression";
-import { BlobServiceClient } from "@azure/storage-blob";
+// import { BlobServiceClient } from "@azure/storage-blob";
 
 dotenv.config();
 
@@ -24,13 +24,13 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Configure Azure Blob Storage
-const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
-if (!connectionString) {
-  throw new Error("Azure Storage connection string is not defined.");
-}
-const blobServiceClient = BlobServiceClient.fromConnectionString(connectionString);
-const containerClient = blobServiceClient.getContainerClient(process.env.AZURE_STORAGE_CONTAINER_NAME);
+// // Configure Azure Blob Storage
+// const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
+// if (!connectionString) {
+//   throw new Error("Azure Storage connection string is not defined.");
+// }
+// const blobServiceClient = BlobServiceClient.fromConnectionString(connectionString);
+// const containerClient = blobServiceClient.getContainerClient(process.env.AZURE_STORAGE_CONTAINER_NAME);
 
 const app = express();
 const server = http.createServer(app);

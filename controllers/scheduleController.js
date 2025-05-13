@@ -18,12 +18,12 @@ const __dirname = dirname(__filename);
 
 
 // Configure Azure Blob Storage
-const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
-if (!connectionString) {
-  throw new Error("Azure Storage connection string is not defined.");
-}
-const blobServiceClient = BlobServiceClient.fromConnectionString(connectionString);
-const containerClient = blobServiceClient.getContainerClient(process.env.AZURE_STORAGE_CONTAINER_NAME);
+// const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
+// if (!connectionString) {
+//   throw new Error("Azure Storage connection string is not defined.");
+// }
+// const blobServiceClient = BlobServiceClient.fromConnectionString(connectionString);
+// const containerClient = blobServiceClient.getContainerClient(process.env.AZURE_STORAGE_CONTAINER_NAME);
 
 // Define storage configuration for multer
 const storage = multer.memoryStorage();
@@ -264,3 +264,109 @@ export const uploadSchedule = [
     }
   },
 ];
+
+// New controller function to get schedules by employee ID
+export const getSchedulesByEmployeeId = async (req, res) => {
+  try {
+    const { employeeId } = req.params;
+    if (!employeeId) {
+      return res.status(400).json({ message: "Employee ID is required." });
+    }
+
+    // Assuming your Schedule model has a 'user' field storing the ObjectId of the User
+    // And your User model's _id is what's being passed as employeeId from the frontend
+    const schedules = await Schedule.find({ user: employeeId })
+      // .populate('user', 'name email username'); // Optionally populate user details if needed by frontend
+      .lean(); // Use .lean() for faster queries if you don't need Mongoose documents
+
+    // Unlike getAllSchedules, we might return an empty array if no schedules, not necessarily a 404
+    // The frontend can then display "No schedules found"
+    res.status(200).json(schedules);
+
+  } catch (error) {
+    console.error("Error fetching schedules for employee:", error);
+    // Use the existing handleErrorResponse or a similar pattern
+    handleErrorResponse(res, error, 500, "Server error fetching employee schedules.");
+  }
+};
+
+// Controller to update shift swap availability
+export const updateShiftAvailabilityController = async (req, res) => {
+  try {
+    const { scheduleId } = req.params;
+    const { isAvailableForSwap } = req.body;
+    const userId = req.user.id; // Assuming auth middleware adds user to req
+
+    if (typeof isAvailableForSwap !== 'boolean') {
+      return res.status(400).json({ message: "isAvailableForSwap must be a boolean." });
+    }
+
+    const schedule = await Schedule.findById(scheduleId);
+
+    if (!schedule) {
+      return res.status(404).json({ message: "Schedule not found." });
+    }
+
+    // Ensure the authenticated user owns this schedule or is an admin
+    // For now, only allowing owner to change. Admin logic can be added.
+    if (schedule.user.toString() !== userId) {
+      return res.status(403).json({ message: "User not authorized to update this schedule." });
+    }
+
+    schedule.isOpenForSwap = isAvailableForSwap;
+    await schedule.save();
+
+    // Populate user details before sending back, similar to getSchedulesByEmployeeId if needed
+    // For consistency with BackendShift interface, we can just send the updated schedule.
+    // Or, if frontend expects populated user:
+    // const populatedSchedule = await Schedule.findById(schedule._id).populate('user', 'name username email role').lean();
+    // res.status(200).json(populatedSchedule);
+    
+    res.status(200).json(schedule);
+
+  } catch (error) {
+    console.error("Error updating shift swap availability:", error);
+    handleErrorResponse(res, error, 500, "Server error updating shift swap availability.");
+  }
+};
+
+export const getFilteredAvailableSchedules = async (req, res) => {
+  try {
+    const { week, excludeUserId } = req.query;
+
+    if (!week || !excludeUserId) {
+      return res.status(400).json({ message: "Week and excludeUserId are required query parameters." });
+    }
+
+    const weekNumber = parseInt(week, 10);
+    if (isNaN(weekNumber)) {
+      return res.status(400).json({ message: "Week must be a valid number." });
+    }
+
+    const query = {
+      week: weekNumber,
+      isOpenForSwap: true,
+      user: { $ne: excludeUserId }
+    };
+
+    const schedules = await Schedule.find(query)
+      .populate({
+        path: 'user',
+        select: '_id name username role isOpenForSwap'
+      })
+      .lean();
+
+    res.status(200).json(schedules);
+
+  } catch (error) {
+    // Using the existing handleErrorResponse
+    handleErrorResponse(res, error, 500);
+  }
+};
+
+
+// Modify handleErrorResponse slightly if a default message is good
+// const handleErrorResponse = (res, error, statusCode = 500, defaultMessage = "Server error") => {
+//   console.error(error);
+//   res.status(statusCode).json({ message: error.message || defaultMessage });
+// };

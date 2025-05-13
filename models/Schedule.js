@@ -5,6 +5,7 @@ const scheduleSchema = new mongoose.Schema({
   workingHours: { type: String, required: true },
   offDays: { type: [String], required: true },
   week: { type: String, required: true },
+  isOpenForSwap: { type: Boolean, default: false }, // Added field
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
   skill: {
