@@ -5,7 +5,7 @@
   "scripts": {
     "start": "node server.js",
     "server": "nodemon server.js",
-    "client": "npm start --prefix ../client",
+    "client": "npm start --prefix ../SchedulerApp",
     "dev": "cross-env NODE_OPTIONS=--trace-deprecation concurrently \"npm:server\" \"npm:client\""
   },
   "author": "alzriqat",
