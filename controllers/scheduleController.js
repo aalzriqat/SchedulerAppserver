@@ -146,7 +146,7 @@ export const getAllSchedules = async (_, res) => {
     const schedules = await Schedule.find()
       .populate({
         path: 'user',
-        select: 'id isOpenForSwap role swapRequests skill marketplace'
+        select: 'id username isOpenForSwap role swapRequests skill marketplace'
       })
       .lean();
 
@@ -158,6 +158,7 @@ export const getAllSchedules = async (_, res) => {
       ...schedule,
       user: {
         _id: schedule.user._id,
+        username: schedule.user.username,
         isOpenForSwap: schedule.user.isOpenForSwap,
         role: schedule.user.role,
         swapRequests: schedule.user.swapRequests,
