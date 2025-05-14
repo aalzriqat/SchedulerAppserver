@@ -97,8 +97,13 @@ export const getAvailableSchedules = (req, res) => {
 
 // Helper function for error response
 const handleErrorResponse = (res, error, statusCode = 500) => {
-  console.error(error);
-  res.status(statusCode).json({ error: error.message || error });
+  console.error(error); // Log the full error for server-side debugging
+  if (process.env.NODE_ENV === 'production') {
+    res.status(statusCode).json({ error: 'An unexpected error occurred. Please try again later.' });
+  } else {
+    // In development, send more details
+    res.status(statusCode).json({ error: error.message || String(error), stack: error.stack });
+  }
 };
 
 // Helper function to send email
