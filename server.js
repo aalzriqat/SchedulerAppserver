@@ -36,7 +36,9 @@ const app = express();
 const server = http.createServer(app);
 export const io = new Server(server, {
   cors: {
-    origin: "*",
+    origin: ["https://criftyoo.github.io", "https://criftyoo.github.io/client", "http://localhost:3000"], // Match HTTP CORS
+    methods: ["GET", "POST"], // Specify allowed methods for Socket.IO
+    credentials: true
   },
 });
 
