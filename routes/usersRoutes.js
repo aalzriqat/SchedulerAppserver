@@ -8,6 +8,7 @@ import {
   closeAllUsersForSwap,
   fetchAllUsers,
   auth,
+  isAdmin, // Import isAdmin
   deleteAllSwaps,
   deleteAllSchedules,
   allowAllUsersForSwap
@@ -39,18 +40,18 @@ usersRouter.get('/isOpenForSwap', auth, getIsOpenForSwap);
 usersRouter.post('/updateOpenForSwap', auth, updateIsOpenForSwap);
 
 // Set all users isOpenForSwap to false
-usersRouter.post('/closeAll', closeAllUsersForSwap);
+usersRouter.post('/closeAll', auth, isAdmin, closeAllUsersForSwap);
 
 // Fetch all users
-usersRouter.get('/all', auth, fetchAllUsers);
+usersRouter.get('/all', auth, isAdmin, fetchAllUsers);
 
 // Delete all swap requests
-usersRouter.delete('/deleteAllSwaps',  deleteAllSwaps);
+usersRouter.delete('/deleteAllSwaps', auth, isAdmin, deleteAllSwaps);
 
 // Delete all schedules
-usersRouter.delete('/deleteAllSchedules',  deleteAllSchedules);
+usersRouter.delete('/deleteAllSchedules', auth, isAdmin, deleteAllSchedules);
 
 // Allow all users for swap
-usersRouter.post('/allowAll', allowAllUsersForSwap);
+usersRouter.post('/allowAll', auth, isAdmin, allowAllUsersForSwap);
 
 export default usersRouter;

@@ -24,6 +24,14 @@ export const auth = (req, res, next) => {
   }
 };
 
+// Middleware to check for admin role
+export const isAdmin = (req, res, next) => {
+  if (req.user && req.user.role === 'admin') {
+    next();
+  } else {
+    res.status(403).json({ msg: "Access denied. Admin role required." });
+  }
+};
 // Rate limiter middleware
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -63,6 +71,7 @@ export const registerUser = [
     const payload = {
       user: {
         id: user.id,
+        role: user.role, // Added role to JWT payload
       },
     };
 
@@ -98,6 +107,7 @@ export const loginUser = [
     const payload = {
       user: {
         id: user.id,
+        role: user.role, // Added role to JWT payload
       },
     };
 
