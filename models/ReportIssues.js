@@ -1,21 +1,24 @@
 import mongoose from "mongoose";
 
 const reportIssuesSchema = new mongoose.Schema({
-    user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-    issue: { type: String, required: true },
-    createdAt: { type: Date, default: Date.now },
-    updatedAt: { type: Date, default: Date.now },
-});
+    title: { type: String, required: true },
+    description: { type: String, required: true },
+    category: {
+        type: String,
+        required: true,
+        enum: ['bug', 'feature_request', 'ui_ux', 'other']
+    },
+    status: {
+        type: String,
+        required: true,
+        enum: ['open', 'in_progress', 'resolved', 'closed'],
+        default: 'open'
+    },
+    reportedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    adminNotes: { type: String, default: '' },
+}, { timestamps: true }); // Use timestamps for createdAt and updatedAt
 
-
-reportIssuesSchema.post('save', async function (doc) {
-    if (doc.user) {
-        await mongoose.model('User').updateOne(
-            { _id: doc.user },
-            { reportIssues: doc._id }
-        );
-    }
-}
-);
+// Removing the post save hook as its logic for updating User model is likely incorrect for this context.
+// If User needs to store references to issues, it should be an array of issue IDs.
 
 export default mongoose.model("ReportIssues", reportIssuesSchema);

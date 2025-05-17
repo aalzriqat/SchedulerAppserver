@@ -2,27 +2,15 @@ import { check, validationResult } from "express-validator";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
-import dotenv from "dotenv";
+import config from "config"; // Import config package
 import asyncHandler from "express-async-handler";
 import rateLimit from "express-rate-limit";
 import sanitize from "mongo-sanitize";
 
-dotenv.config();
+// dotenv.config(); // Removed, as it's called in server.js or db.js
 
-// Middleware to authenticate token
-export const auth = (req, res, next) => {
-  const token = req.header("x-auth-token");
-  if (!token) {
-    return res.status(401).json({ msg: "No token, authorization denied" });
-  }
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded.user;
-    next();
-  } catch (error) {
-    res.status(401).json({ msg: "Token is not valid" });
-  }
-};
+// The 'auth' middleware previously here has been removed.
+// Please use the common authMiddleware from '../middleware/authMiddleware.js' in your routes.
 
 // Middleware to check for admin role
 export const isAdmin = (req, res, next) => {
@@ -50,17 +38,31 @@ export const registerUser = [
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
-    const { username, email, password } = sanitize(req.body);
+    // Sanitize parts of the body, but use the raw password for hashing
+    const sanitizedBody = sanitize(req.body);
+    const rawEmail = sanitizedBody.email; // Get potentially unnormalized email
+    const username = sanitizedBody.username;
+    const rawPassword = req.body.password; // Use raw password from original body
 
-    let user = await User.findOne({ email });
+    if (!rawEmail || !rawPassword || !username) { // Added username check
+        return res.status(400).json({ errors: [{ msg: "Username, email and password are required." }] });
+    }
+
+    const email = rawEmail.toLowerCase().trim(); // Normalize email
+    const password = rawPassword.trim(); // Trim password
+
+    let user = await User.findOne({ email }); // Use normalized email for check
     if (user) {
-      return res.status(400).json({ errors: [{ msg: "User already exists" }] });
+      // FOR DEBUGGING/FIXING DATA: Allow re-registration by deleting existing user
+      console.log(`[Register Attempt] User ${email} already exists. Deleting old record to allow re-registration for data correction.`);
+      await User.deleteOne({ email });
+      // return res.status(400).json({ errors: [{ msg: "User already exists" }] }); // Original behavior
     }
 
     user = new User({
-      username,
-      email,
-      password,
+      username, // username is from sanitizedBody
+      email,    // Store normalized email
+      password, // password (trimmed) will be hashed by Mongoose pre-save or explicitly here
     });
 
     const salt = await bcrypt.genSalt(12); // Increased salt rounds for better security
@@ -71,11 +73,13 @@ export const registerUser = [
     const payload = {
       user: {
         id: user.id,
-        role: user.role, // Added role to JWT payload
+        role: user.role,
       },
     };
 
-    jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "5d" }, (err, token) => {
+    const jwtSecret = config.get('jwtSecret');
+    if (!jwtSecret) throw new Error('jwtSecret not configured for signing');
+    jwt.sign(payload, jwtSecret, { expiresIn: "5d" }, (err, token) => {
       if (err) throw err;
       res.json({ token });
     });
@@ -88,30 +92,53 @@ export const loginUser = [
   check("email", "Please include a valid email").isEmail(),
   check("password", "Password is required").exists(),
   asyncHandler(async (req, res) => {
+    console.log('[Login Attempt] Raw req.body:', req.body);
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('[Login Attempt] Validation errors:', errors.array());
       return res.status(400).json({ errors: errors.array() });
     }
-    const { email, password } = sanitize(req.body);
+    
+    const sanitizedBody = sanitize(req.body);
+    const rawEmail = sanitizedBody.email;
+    const rawPassword = req.body.password;
+    console.log('[Login Attempt] Raw credentials from body:', { rawEmail, rawPassword });
+
+
+    if (!rawEmail || !rawPassword) {
+        console.log('[Login Attempt] Email or password missing.');
+        return res.status(400).json({ errors: [{ msg: "Email and password are required." }] });
+    }
+    
+    const email = rawEmail.toLowerCase().trim();
+    const password = rawPassword.trim();
+    console.log('[Login Attempt] Processed credentials for lookup:', { email, password });
 
     let user = await User.findOne({ email });
+    
     if (!user) {
+      console.log(`[Login Attempt] User not found for email: ${email}`);
       return res.status(400).json({ errors: [{ msg: "Invalid credentials" }] });
     }
+    console.log(`[Login Attempt] User found for email: ${email}`, { userId: user._id, storedHash: user.password });
 
     const isMatch = await bcrypt.compare(password, user.password);
+    console.log(`[Login Attempt] Password comparison result for user ${email}: ${isMatch}`);
     if (!isMatch) {
       return res.status(400).json({ errors: [{ msg: "Invalid credentials" }] });
     }
+    console.log(`[Login Attempt] Successful for user: ${email}`);
 
     const payload = {
       user: {
         id: user.id,
-        role: user.role, // Added role to JWT payload
+        role: user.role,
       },
     };
 
-    jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "5d" }, (err, token) => {
+    const jwtSecret = config.get('jwtSecret');
+    if (!jwtSecret) throw new Error('jwtSecret not configured for signing');
+    jwt.sign(payload, jwtSecret, { expiresIn: "5d" }, (err, token) => {
       if (err) throw err;
       res.json({ token });
     });

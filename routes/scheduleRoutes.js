@@ -7,17 +7,18 @@ import {
   updateShiftAvailabilityController,
   getFilteredAvailableSchedules // Import the new controller function
 } from "../controllers/scheduleController.js";
-import { auth } from "../controllers/usersController.js";
+import authMiddleware from "../middleware/authMiddleware.js"; // Corrected import
+import { isAdmin } from "../controllers/usersController.js"; // Import isAdmin
 
 const router = express.Router();
 
-router.get("/all", getAllSchedules);
-router.post("/upload", uploadSchedule);
-router.post('/available-schedules', getAvailableSchedules);
-router.get("/employee/:employeeId", auth, getSchedulesByEmployeeId);
-router.patch("/:scheduleId/availability", auth, updateShiftAvailabilityController);
+router.get("/all", authMiddleware, getAllSchedules);
+router.post("/upload", authMiddleware, isAdmin, uploadSchedule);
+router.post('/available-schedules', authMiddleware, getAvailableSchedules);
+router.get("/employee/:employeeId", authMiddleware, getSchedulesByEmployeeId); // Authorization is handled in controller
+router.patch("/:scheduleId/availability", authMiddleware, updateShiftAvailabilityController);
 
 // New route for fetching filtered available schedules for swap
-router.get("/available-for-swap-filtered", auth, getFilteredAvailableSchedules);
+router.get("/available-for-swap-filtered", authMiddleware, getFilteredAvailableSchedules);
 
 export default router;

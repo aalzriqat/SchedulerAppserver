@@ -36,9 +36,8 @@ const swapRequestSchema = new mongoose.Schema({
     default: "pending",
   },
   message: { type: String },
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now },
-});
+  // createdAt and updatedAt will be handled by timestamps: true
+}, { timestamps: true });
 
 // Middleware to update related documents
 swapRequestSchema.post('save', async function(doc) {

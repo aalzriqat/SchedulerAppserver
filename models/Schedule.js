@@ -1,13 +1,12 @@
 import mongoose from "mongoose";
 
 const scheduleSchema = new mongoose.Schema({
-  user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true }, // Made user required
   workingHours: { type: String, required: true },
   offDays: { type: [String], required: true },
-  week: { type: String, required: true },
-  isOpenForSwap: { type: Boolean, default: false }, // Added field
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now },
+  week: { type: Number, required: true }, // Changed to Number
+  isOpenForSwap: { type: Boolean, default: false },
+  // createdAt and updatedAt will be handled by timestamps: true
   skill: {
     type: String,
     enum: [
@@ -34,17 +33,12 @@ const scheduleSchema = new mongoose.Schema({
     default: "pending",
   },
   swapRequests: [{ type: mongoose.Schema.Types.ObjectId, ref: "SwapRequest" }],
-});
+}, { timestamps: true }); // Added timestamps
 
 scheduleSchema.index({ user: 1, week: 1 }, { unique: true });
 
-// Middleware to update related documents
-scheduleSchema.post("save", async function (doc) {
-  if (doc.user) {
-    await mongoose
-      .model("User")
-      .updateOne({ _id: doc.user }, { schedule: doc._id });
-  }
-});
+// Removed post-save hook that updated User.schedule with the latest schedule ID.
+// This logic is potentially problematic for users with multiple schedules.
+// If a link from User to current/primary schedule is needed, it should be managed differently.
 
 export default mongoose.model("Schedule", scheduleSchema);

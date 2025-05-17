@@ -4,7 +4,9 @@ import config from 'config';
 
 dotenv.config();
 
-const db = process.env.MONGO_URL || config.get('database.mongoURI');
+// config.get('mongoURI') will correctly fetch from environment variable MONGO_URI
+// due to custom-environment-variables.json, or from default.json if defined there.
+const db = config.get('mongoURI');
 
 const connectDB = async () => {
   try {

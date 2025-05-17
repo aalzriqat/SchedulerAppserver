@@ -1,4 +1,3 @@
-import { BlobServiceClient } from "@azure/storage-blob";
 import multer from "multer";
 import nodemailer from "nodemailer";
 import xlsx from "xlsx";
@@ -26,17 +25,11 @@ const __dirname = dirname(__filename);
 // const containerClient = blobServiceClient.getContainerClient(process.env.AZURE_STORAGE_CONTAINER_NAME);
 
 // Define storage configuration for multer
-const storage = multer.memoryStorage();
-const localStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/');  // Folder where files will be uploaded
-  },
-  filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`);
-  }
-});
+const storage = multer.memoryStorage(); // Using memoryStorage for Excel processing
+// const localStorage = multer.diskStorage({...}); // Removed unused diskStorage configuration
+
 const upload = multer({
-  storage,
+  storage, // Ensure this 'storage' (memoryStorage) is what's intended for uploadSchedule
   fileFilter: (req, file, cb) => {
     const allowedMimeTypes = [
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -107,7 +100,7 @@ const handleErrorResponse = (res, error, statusCode = 500) => {
 };
 
 // Helper function to send email
-const sendEmail = async (username, workingHours, offDays, week, skill, marketPlace) => {
+const sendEmail = async (userEmail, username, workingHours, offDays, week, skill, marketPlace) => {
   const transporter = nodemailer.createTransport({
  service: "gmail",
     auth: {
@@ -116,9 +109,11 @@ const sendEmail = async (username, workingHours, offDays, week, skill, marketPla
     },
   });
 
+  const dashboardUrl = process.env.CLIENT_DASHBOARD_URL || 'https://criftyoo.github.io/Scheduler-Client/'; // Fallback if not set
+
   const mailOptions = {
     from: process.env.EMAIL_USER,
-    to: `${username}@amazon.com`,
+    to: userEmail, // Use actual user email
     subject: "Next Week(s) Schedule",
     text: `
 Hello ${username},
@@ -134,7 +129,7 @@ Here are the details of your new schedule:
 - Market Place: ${marketPlace || "Not Available"}
 
 You will be able to view your schedule and manage swap requests in your dashboard.
-Dashboard: https://criftyoo.github.io/Scheduler-Client/
+Dashboard: ${dashboardUrl}
 
 If you have any questions or need further assistance, please feel free to reach out.
 
@@ -155,8 +150,10 @@ export const getAllSchedules = async (_, res) => {
       })
       .lean();
 
-    if (!schedules.length) {
-      return res.status(404).json({ message: "No schedules found" });
+    // It's common for a collection endpoint to return 200 OK with an empty array if no items are found,
+    // rather than a 404. A 404 is typically for when the resource/path itself doesn't exist.
+    if (!schedules || schedules.length === 0) {
+      return res.status(200).json([]); // Return 200 OK with empty array
     }
 
     const filteredSchedules = schedules.map(schedule => ({
@@ -191,16 +188,8 @@ export const uploadSchedule = [
 
       console.log("File uploaded:", req.file.originalname);
 
-      const blobName = `${Date.now()}-${req.file.originalname}`;
-      const blockBlobClient = containerClient.getBlockBlobClient(blobName);
-
-      await blockBlobClient.uploadData(req.file.buffer, {
-        blobHTTPHeaders: { blobContentType: req.file.mimetype },
-      });
-
-      console.log("File uploaded to Azure Blob Storage:", blobName);
-
-      const downloadUrl = blockBlobClient.url;
+      // Azure Blob Storage upload logic removed for now as it's incomplete.
+      // File will be processed from req.file.buffer directly.
 
       const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
       const sheetName = workbook.SheetNames[0];
@@ -246,7 +235,12 @@ export const uploadSchedule = [
         });
 
         schedulesToSave.push(schedule);
-        emailPromises.push(sendEmail(username, workingHours, offDays, week, skill, marketPlace));
+        if (user && user.email) {
+          emailPromises.push(sendEmail(user.email, username, workingHours, offDays, week, skill, marketPlace));
+        } else {
+          console.warn(`Email not sent for user ${username} as email is missing.`);
+          // Optionally, add to an errors array if sending email is critical
+        }
       }
 
       if (schedulesToSave.length > 0) {
@@ -261,7 +255,7 @@ export const uploadSchedule = [
       } else {
         res.status(201).json({
           message: "Schedules uploaded and emails sent successfully!",
-          downloadUrl,
+          // downloadUrl removed
         });
       }
     } catch (error) {
@@ -275,8 +269,15 @@ export const uploadSchedule = [
 export const getSchedulesByEmployeeId = async (req, res) => {
   try {
     const { employeeId } = req.params;
+    const requester = req.user; // Populated by authMiddleware
+
     if (!employeeId) {
       return res.status(400).json({ message: "Employee ID is required." });
+    }
+
+    // Authorization: Allow if the requester is the employee themselves or an admin
+    if (requester.id !== employeeId && requester.role !== 'admin') {
+      return res.status(403).json({ message: "Access denied. You can only fetch your own schedules or you must be an admin." });
     }
 
     // Assuming your Schedule model has a 'user' field storing the ObjectId of the User

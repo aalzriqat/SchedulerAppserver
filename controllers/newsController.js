@@ -57,7 +57,7 @@ export const updateNews = async (req, res) => {
     newsItem.title = title;
     newsItem.description = description;
     newsItem.image = image;
-    newsItem.updatedAt = Date.now();
+    // newsItem.updatedAt = Date.now(); // Removed, as timestamps: true in model handles this
 
     await newsItem.save();
     res.json(newsItem);

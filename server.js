@@ -7,7 +7,8 @@ import swapRoutes from "./routes/swapRoutes.js";
 import preferenceRoutes from "./routes/preferenceRoutes.js";
 import leavePlannerRoutes from "./routes/leavePlannerRoutes.js";
 import newsRoutes from "./routes/newsRoutes.js";
-import { reportIssues } from "./controllers/reportIssuesController.js";
+import reportIssuesRoutes from "./routes/reportIssuesRoutes.js";
+import notificationRoutes from "./routes/notificationRoutes.js"; // Import notification routes
 import path from "path";
 import { fileURLToPath } from "url";
 import http from "http";
@@ -64,7 +65,8 @@ app.use("/swap", swapRoutes);
 app.use("/preferences", preferenceRoutes);
 app.use("/leaves", leavePlannerRoutes);
 app.use("/news", newsRoutes);
-app.post("/report-issues", reportIssues);
+app.use("/issues", reportIssuesRoutes);
+app.use("/notifications", notificationRoutes); // Mount notification routes
 
 connectDB();
 app.use(express.static(path.join(__dirname, "../client/build")));

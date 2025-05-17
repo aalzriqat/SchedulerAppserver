@@ -5,21 +5,13 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   role: { type: String, enum: ["employee", "admin","validator"], default: "employee" },
   password: { type: String, required: true },
-  schedule: { type: mongoose.Schema.Types.ObjectId, ref: "Schedule" },
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now },
+  schedule: { type: mongoose.Schema.Types.ObjectId, ref: "Schedule" }, // Link to a primary/current schedule
+  // createdAt and updatedAt will be handled by timestamps: true
   swapRequests: [{ type: mongoose.Schema.Types.ObjectId, ref: "SwapRequest" }],
   isOpenForSwap: { type: Boolean, default: false },
-});
+}, { timestamps: true }); // Added timestamps
 
-// Middleware to update related documents
-userSchema.post('save', async function(doc) {
-  if (doc.schedule) {
-    await mongoose.model('Schedule').updateOne(
-      { _id: doc.schedule },
-      { user: doc._id }
-    );
-  }
-});
+// Removed post-save hook. The link from Schedule to User is primary.
+// If User.schedule field is set, it's assumed to be managed at a higher level if needed.
 
 export default mongoose.model("User", userSchema);
